@@ -1,9 +1,15 @@
 from flask import Flask
 import subprocess
+import re
+import pandas as pd
+import time
 
 app = Flask(__name__)
 
 # Define a basic route
+
+hash_map = {}
+
 @app.route('/')
 def home():
     return 'Hello, World!\n'
@@ -17,14 +23,23 @@ def getURL():
     # command = "./interactsh-client 2>&1 | tee url.txt"
     command = "(./interactsh-client | tee output.txt) 3>&1 1>&2 2>&3 | tee url.txt"
 
-    # Run the command and capture the output
+    file_path = 'url.txt'
+
+    # this will empty the file
+    with open(file_path, 'w'):
+        pass
     subprocess.Popen(command, shell=True, text=True)
-    file_path = 'url.txt'  # Replace 'example.txt' with the path to your file
+    
+    time.sleep(1)
 
     with open(file_path, 'r') as file:
         content = file.read()
     
-    return content
+    oast_link_regex = re.compile(r'.*oast.*')
+    link = oast_link_regex.findall(content)[0].split()[1]
+    print("here is the link " + link)
+    # Use re.search to check for a match
+    return link
     
 
 
@@ -32,11 +47,30 @@ def getURL():
 def getInteractions():
     file_path = 'output.txt'  # Replace 'example.txt' with the path to your file
 
-    
+    data = {
+        'datatime': [],
+        'value': []
+    }
     with open(file_path, 'r') as file:
-        content = file.read()
+        for line in file:
+            after_first_word_removed = line.split()[1:]
+            datestamp = after_first_word_removed[-2]
+            timestamp = after_first_word_removed[-1]
+
+            row = ' '.join(after_first_word_removed)
+
+            data['datatime'].append(datestamp + " " + timestamp)
+            data['value'].append(row)
     
-    return content
+    df = pd.DataFrame(data)
+    df['datatime'] = pd.to_datetime(df['datatime'])
+
+    data_in_dict = df.to_dict()
+    data_in_list = []
+
+    for key, value in data_in_dict['value'].items():
+        data_in_list.append(value)
+    return data_in_list
 
 
 if __name__ == '__main__':
