@@ -38,7 +38,7 @@ def read_and_store_data(file_path, interaction_data):
                 timestamp = data_in_list[-1]
 
                 new_data = {'datetime': pd.to_datetime(datestamp + " " + timestamp), 'value': ' '.join(data_in_list[1:])}
-                interaction_data[link] = interaction_data[link].append(new_data, ignore_index=True)
+                interaction_data[link] = pd.concat([interaction_data[link], pd.DataFrame([new_data])], ignore_index=True)
 
     except  Exception as e:
         print(f"An error occured: {e}")
